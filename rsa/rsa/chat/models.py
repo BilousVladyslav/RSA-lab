@@ -36,8 +36,10 @@ class CryptUserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, username, s_key_module, s_key_exp, s_key_d, u_key_module, u_key_exp):
+    def create_superuser(self, username, password, email, s_key_module=1,
+                         s_key_exp=1, s_key_d=1, u_key_module=1, u_key_exp=1):
         user = self.create_user(username, s_key_module, s_key_exp, s_key_d, u_key_module, u_key_exp)
+        user.set_password(password)
         user.is_admin = True
         user.is_staff = True
         user.is_superuser = True
@@ -46,11 +48,10 @@ class CryptUserManager(BaseUserManager):
 
 
 class CryptUser(AbstractUser):
-    server_key_module = models.IntegerField()
-    server_key_exponent = models.IntegerField()
-    server_key_D = models.IntegerField()
-    user_key_module = models.IntegerField()
-    user_key_exponent = models.IntegerField()
+    server_key_module = models.IntegerField(blank=False)
+    server_key_exponent = models.IntegerField(blank=False)
+    server_key_D = models.IntegerField(blank=False)
+    user_key_module = models.IntegerField(blank=False)
+    user_key_exponent = models.IntegerField(blank=False)
 
     objects = CryptUserManager()
-    pass
