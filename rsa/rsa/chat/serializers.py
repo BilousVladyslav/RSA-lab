@@ -10,6 +10,10 @@ class RegisterUserSerializer(serializers.HyperlinkedModelSerializer):
 
     def save(self):
         e, n, d = RSA().generate_keys()
+
+        while d is None:
+            e, n, d = RSA().generate_keys()
+
         user = CryptUser(username=self.validated_data['username'],
                          server_key_module=n, server_key_exponent=e, server_key_D=d,
                          user_key_module=self.validated_data['user_key_module'],
@@ -21,11 +25,20 @@ class RegisterUserSerializer(serializers.HyperlinkedModelSerializer):
         return user
 
 
-class ChatSerializer(serializers.HyperlinkedModelSerializer):
+class ChatSerializer(serializers.Serializer):
 
-    text = serializers.CharField()
+    text = serializers.CharField(required=True)
+    username = serializers.CharField(required=True)
 
     class Meta:
-        model = CryptUser
         fields = ['username', 'text']
+
+    def get_data(self):
+        username = self.validated_data['username']
+        users_queryset = CryptUser.objects.filter(username=username)
+
+        if len(users_queryset) == 0:
+            raise serializers.ValidationError({'error': 'User does not exist.'})
+
+        return users_queryset[0], self.validated_data['text']
 

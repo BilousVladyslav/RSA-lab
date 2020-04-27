@@ -1,9 +1,5 @@
-from django.shortcuts import render
-from django.contrib.auth.models import User
-from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from rest_framework.views import APIView
 from .serializers import RegisterUserSerializer, ChatSerializer
 from .models import CryptUser
 from .algorythm import RSA
@@ -25,46 +21,23 @@ def registration_view(request):
         return Response(data)
 
 
-@api_view(['GET',])
+@api_view(['POST',])
 def chat_view(request):
-    if request.method == 'GET':
+    print(request.data)
+    if request.method == 'POST':
         data = {}
-        if request.data['username'] is not None and request.data['text'] is not None:
-            user = CryptUser.objects.get(username=request.data['username'])
+        serializer = ChatSerializer(data=request.data)
+        if serializer.is_valid():
+            user, text = serializer.get_data()
 
-            text = ''
-            for letter in request.data['text']:
-                lett = RSA().decrypt(letter, user.server_key_D, user.server_key_module)
-                text += lett
+            decrypted_text = RSA().decrypt_str(text, user.server_key_D, user.server_key_module)
 
-            result = ''
-            for letter in text.capitalize():
-                result += RSA().encrypt(letter, user.user_key_exponent, user.user_key_module)
+            response_text = decrypted_text.upper()
 
-            data['text'] = result
-            
+            response = RSA().encrypt_str(response_text, user.user_key_exponent, user.user_key_module)
+
+            data['text'] = response
+
         else:
-            data['error'] = 'blank username or text'
+            data = serializer.errors
         return Response(data)
-
-
-#
-# class UserViewSet(viewsets.ModelViewSet):
-#     """
-#     API endpoint that allows users to be viewed or edited.
-#     """
-#     queryset = CryptUser.objects.all().order_by('-date_joined')
-#     serializer_class = UserSerializer
-#     permission_classes = []
-#
-#
-# class ChatView(APIView):
-#     """
-#     API endpoint that allows users to be viewed or edited.
-#     """
-#     queryset = CryptUser.objects.all().order_by('-date_joined')
-#     serializer_class = UserSerializer
-#     permission_classes = []
-#
-#     def get(self, request, format=None):
-#         print(request)
